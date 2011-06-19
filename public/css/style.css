@@ -1,0 +1,332 @@
+
+body {
+font-family: 'Linux Libertine', Palatino, 'Palatino Linotype', 'Book Antiqua', Georgia, 'Times New Roman', serif;
+margin: 0;
+margin-bottom: 25px;
+padding: 0;
+background-color: #eee;
+background-image: url("/images/perldancer-bg.jpg"); 
+background-repeat: no-repeat;
+background-position: top left;
+
+font-family: "Lucida Grande", "Bitstream Vera Sans", "Verdana";
+font-size: 13px;
+color: #333;
+}
+
+h1 {
+font-size: 28px;
+color: #000;
+}
+
+a  {color: #03c}
+a:hover {
+background-color: #03c;
+color: white;
+text-decoration: none;
+}
+
+
+#page {
+background-color: #fefefe;
+width: 750px;
+margin: auto;
+margin-left: auto;
+padding-left: 0px;
+margin-right: auto;
+}
+
+#content {
+background-color: white;
+border: 3px solid #aaa;
+border-top: none;
+padding: 25px;
+width: 500px;
+}
+
+#sidebar {
+float: right;
+width: 175px;
+}
+
+#header, #about, #getting-started {
+padding-left: 75px;
+padding-right: 30px;
+}
+
+
+#header {
+background-image: url("/images/perldancer.jpg"); 
+background-repeat: no-repeat;
+background-position: top left;
+height: 64px;
+}
+#header h1, #header h2 {margin: 0}
+#header h2 {
+color: #888;
+font-weight: normal;
+font-size: 16px;
+}
+
+
+#about h3 {
+margin: 0;
+margin-bottom: 10px;
+font-size: 14px;
+}
+
+#about-content {
+background-color: #ffd;
+border: 1px solid #fc0;
+margin-left: -11px;
+}
+#about-content table {
+margin-top: 10px;
+margin-bottom: 10px;
+font-size: 11px;
+border-collapse: collapse;
+}
+#about-content td {
+padding: 10px;
+padding-top: 3px;
+padding-bottom: 3px;
+}
+#about-content td.name  {color: #555}
+#about-content td.value {color: #000}
+
+#about-content.failure {
+background-color: #fcc;
+border: 1px solid #f00;
+}
+#about-content.failure p {
+margin: 0;
+padding: 10px;
+}
+
+
+#getting-started {
+border-top: 1px solid #ccc;
+margin-top: 25px;
+padding-top: 15px;
+}
+#getting-started h1 {
+margin: 0;
+font-size: 20px;
+}
+#getting-started h2 {
+margin: 0;
+font-size: 14px;
+font-weight: normal;
+color: #333;
+margin-bottom: 25px;
+}
+#getting-started ol {
+margin-left: 0;
+padding-left: 0;
+}
+#getting-started li {
+font-size: 18px;
+color: #888;
+margin-bottom: 25px;
+}
+#getting-started li h2 {
+margin: 0;
+font-weight: normal;
+font-size: 18px;
+color: #333;
+}
+#getting-started li p {
+color: #555;
+font-size: 13px;
+}
+
+
+#search {
+margin: 0;
+padding-top: 10px;
+padding-bottom: 10px;
+font-size: 11px;
+}
+#search input {
+font-size: 11px;
+margin: 2px;
+}
+#search-text {width: 170px}
+
+
+#sidebar ul {
+margin-left: 0;
+padding-left: 0;
+}
+#sidebar ul h3 {
+margin-top: 25px;
+font-size: 16px;
+padding-bottom: 10px;
+border-bottom: 1px solid #ccc;
+}
+#sidebar li {
+list-style-type: none;
+}
+#sidebar ul.links li {
+margin-bottom: 5px;
+}
+
+
+h1, h2, h3, h4, h5 {
+font-family: sans-serif;
+margin: 1.2em 0 0.6em 0;
+}
+
+p {
+line-height: 1.5em;
+margin: 1.6em 0;
+}
+
+code, tt {
+    font-family: 'Andale Mono', Monaco, 'Liberation Mono', 'Bitstream Vera Sans Mono', 'DejaVu Sans Mono', monospace;
+}
+
+#footer {
+clear: both;
+padding-top: 2em;
+text-align: center;
+padding-right: 160px;
+font-family: sans-serif;
+font-size: 10px;
+}
+
+#cal {
+    max-width: 800px;
+    margin: auto;
+    margin-left: auto;
+    padding-left: 0px;
+    margin-right: auto;
+}
+
+.cal-table {
+    border-collapse: collapse;
+    width: 100%;
+    margin-top: 25px;
+}
+
+.cal-cell {
+    vertical-align: top;
+}
+
+.date-label {
+    float: left;
+}
+
+.cal-header {
+    font-size: 16px;
+    font-family: 'Droid Serif', Georgia, 'Linux Libertine', Palatino, 'Palatino Linotype', 'Book Antiqua', 'Times New Roman', serif;
+    background-color: white;
+    color: #333;
+}
+
+.cal-weekday {
+    font-size: 14px;
+    font-family: 'Droid Serif', Georgia, 'Linux Libertine', Palatino, 'Palatino Linotype', 'Book Antiqua', 'Times New Roman', serif;
+    background-color: white;
+    color: #333;
+}
+
+.cal-weekday.cal-cell, .cal-week.cal-cell {
+    border: 1px solid #444;
+}
+
+.cal-weekday p {
+    width: 50px;
+    display: inline;
+}
+
+th.cal-header, td.cal-weekend {
+    border-top: 1px solid #444;
+    border-bottom: 1px solid #444;
+    background-color: #444;
+    color: white;
+}
+
+th.cal-header.cal-week {
+    border-left: 1px solid #444;
+}
+
+.am, .pm {
+    height: 30px;
+    cursor: pointer;
+}
+
+
+.cal-weekend {
+    font-size: 14px;
+    font-family: 'Droid Serif', Georgia, 'Linux Libertine', Palatino, 'Palatino Linotype', 'Book Antiqua', 'Times New Roman', serif;
+    background-color: #555;
+    color: white;
+}
+
+#back-link {
+    text-align: left;
+}
+
+#next-link {
+    text-align: right;
+    float: right;
+}
+
+#cal-title {
+    font-size: 20px;
+    display: inline;
+    text-align: center;
+    width: 100%;
+    padding-left: 200px;
+    padding-right: 200px;
+}
+
+div#page {
+  border: 3px solid #ccc;
+  padding: 10px;
+  margin-top: 10px;
+  -moz-box-shadow: 10px 10px 5px #888;
+  -webkit-box-shadow: 10px 10px 5px #888;
+  box-shadow: 10px 10px 5px #888;
+}
+
+.allocated-Vacation {
+    background-color: #75DDAB;
+    text-align: right;
+}
+
+.allocated-Meeting-Seminar-Conference {
+    background-color: #7975DD;
+    text-align: right;
+}
+
+.allocated-Other {
+    background-color: #D45050;
+    text-align: right;
+}
+
+.allocated-20-time {
+    background-color: #D450B9;
+    text-align: right;
+}
+
+.cal-holiday {
+    background-color: #DDD;
+    text-align: right;
+    height: 60px;
+}
+
+.cal-week.cal-cell {
+    background-color: #444;
+    color: white;
+}
+
+.cal-cell {
+    width: 12%;
+}
+
+.cal-selected {
+    background-color: #58AFD0;
+    cursor: pointer;
+}

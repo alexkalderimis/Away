@@ -1,0 +1,103 @@
+<h1>[% user.name %]</h1>
+<table>
+    <tr>
+        <td>Total Holiday Allowance:</td>
+        <td>[% user.holiday_allowance %]</td>
+    </tr>
+    <tr>
+        <td>Leave allocated:</td>
+        <td>[% half_days_off.size / 2 %]</td>
+    </tr>
+    <tr>
+        <td>Leave remaining this year:</td>
+        <td>[% leave_calculator(user) %]</td>
+    </tr>
+</table>
+
+<h2> Holiday Periods </h2>
+
+<div id="individual_periods">
+<table id="period_table">
+    <tr>
+        <th>Purpose</th>
+        <th>Category</th>
+        <th>From</th>
+        <th>To</th>
+        <th>Length</th>
+    </tr>
+    <tbody>
+    [% 
+        current_period = {}
+        count = 0 
+    %]
+    [% FOREACH hd IN half_days_off %]
+        [% count = count + 1 %]
+        [% IF current_period.note != hd.note 
+            or current_period.category != hd.category %]
+            <tr> 
+                <td>
+                    <input type="checkbox" id="holperiod-[% hd.id %]"/>
+                    [% hd.note %]
+                </td>
+                <td>[% hd.category %]</td>
+                [% parts = hd.day.split('-') %]
+                <td><a href="[% proxy.uri_for('/' _ parts.0 _ '/' _ parts.1 ) %]">[% hd.day %]</a></td>
+            [% current_period = hd %]
+        [% END %]
+        [% IF loop.last || 
+            (loop.next.note != current_period.note 
+             or loop.next.category != current_period.category) %]
+                [% bits = hd.day.split('-') %]
+                <td>
+<input type="hidden" id="perend-[% current_period.id %]" value="[% hd.id %]"/>
+<a href="[% proxy.uri_for('/' _ bits.0 _ '/' _ bits.1 ) %]">[% hd.day %]
+</a>
+                </td>
+                <td>[% count / 2 %]</td>
+            </tr>
+            [% count = 0 %]
+        [% END %]
+    [% END %]
+    </tbody>
+</table>
+</div>
+
+<button disabled id="leave-canceller">Cancel periods</button>
+
+<script type="text/javascript">
+jQuery(function() {
+    jQuery('#leave-canceller').click(function() {
+        var selectedPeriods = jQuery(':checked');
+        var ids = selectedPeriods.map(function(idx, elem) {
+            var ret = elem.id.split('-').pop();
+            ret += "-" + jQuery('#perend-' + elem.id.split('-').pop()).val();
+
+            return ret;
+        }).get();
+        jQuery.ajax({
+            url: "[% proxy.uri_for('/cancel_leave') %]",
+            type: "POST",
+            traditional: true,
+            data: {
+                crsid: "[% request.user %]",
+                leave_periods: ids
+            },
+            dataType: "json",
+            headers: {
+                authorization: "[% request.headers.authorization %]"
+            },
+            success: function(data) {
+                jQuery('#individual_periods').load(
+                "[% proxy.uri_for("/profile") %] #period_table");
+            }
+        });
+    });
+    jQuery('input[type=checkbox]').change(function() {
+        var canceller = jQuery('#leave-canceller');
+        canceller.attr("disabled", (jQuery(':checked').length < 1));
+    });
+});
+</script>
+
+    
+
