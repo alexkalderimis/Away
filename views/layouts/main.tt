@@ -12,6 +12,28 @@
     !window.jQuery && document.write('<script type="text/javascript" src="[% proxy.uri_for('/javascripts/jquery.js') %]"><\/script>')
 /* ]]> */</script>
 
+
+<!--
+Template name: [% view_name %]
+-->
+
+[% TRY %]
+    [% js = "/javascripts/" _ view_name _ ".js" %]
+    [% USE File("public" _ js) %]
+    <script type="text/javascript" 
+            src="[% proxy.uri_for(js) %]"> 
+    </script>
+[% CATCH %]
+[% END %]
+
+<script type="text/javascript">
+
+$AUTH = "[% request.headers.authorization %]";
+$BASE = "[% proxy.uri_for('/') %]";
+$USER = "[% request.user %]";
+
+</script>
+
 </head>
 <body style="background-image: url('[% proxy.uri_for("/images/intermine_logo_tall.png") %]');">
 <div id="page">
