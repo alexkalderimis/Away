@@ -283,6 +283,7 @@ th.cal-header.cal-week {
 }
 
 div#page {
+  font-family: 'Droid Serif', Georgia, 'Linux Libertine', Palatino, 'Palatino Linotype', 'Book Antiqua', 'Times New Roman', serif;
   border: 3px solid #ccc;
   padding: 10px;
   margin-top: 10px;
@@ -331,3 +332,22 @@ div#page {
     background-color: #58AFD0;
     cursor: pointer;
 }
+
+.page-link {
+    padding: 10px;
+}
+
+h2.section-opener {
+    margin-left: 25px;
+}
+a.page-link {
+    color: #555;
+    font-weight: bold;
+    text-decoration: none;
+}
+
+a.page-link:hover {
+    color: white;
+    background-color: #555;
+}
+
