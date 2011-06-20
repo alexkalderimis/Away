@@ -41,4 +41,13 @@ leave_categories:
   - "20% time"
   - "Other"
 
+year_begins:
+    - 10
+    - 1
+
+extra_hols:
+    -
+        - 2011
+        - 04
+        - 29
 
