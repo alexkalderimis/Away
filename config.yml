@@ -24,6 +24,8 @@ engines:
     encoding:  'utf8'
     start_tag: '[%'
     end_tag:   '%]'
+    PRE_CHOMP: 2
+    POST_CHOMP: 2
   JSON:
     allow_blessed: '1'
     convert_blessed: '1'
