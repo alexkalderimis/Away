@@ -252,7 +252,7 @@ th.cal-header.cal-week {
 }
 
 .am, .pm {
-    height: 30px;
+    min-height: 30px;
     cursor: pointer;
 }
 
@@ -320,6 +320,7 @@ div#page {
 .cal-week.cal-cell {
     background-color: #444;
     color: white;
+    cursor: pointer;
 }
 
 .cal-cell {
