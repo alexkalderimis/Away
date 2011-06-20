@@ -1,3 +1,4 @@
+<!-- START: [% component.name %] -->
 <span>Logged in as <a href="[% proxy.uri_for('/profile') %]">[% request.user %]</a></span>
 <div id="cal">
     [% USE cal = Calendar.Simple(month, year, 1) %]
@@ -98,4 +99,6 @@
     </a>
 
 </div>
+
+<!-- END: [% component.name %] -->
 
