@@ -1,10 +1,15 @@
 package Away;
+
+use strict;
+use warnings;
+
 use Dancer ':syntax';
 use Dancer::Plugin::ProxyPath;
 use Dancer::Plugin::DBIC qw(schema);
 
 use Date::Holidays::UK::EnglandAndWales qw/is_uk_holiday/;
 use DateTime;
+use List::MoreUtils qw/uniq/;
 
 our $VERSION = '0.1';
 
@@ -12,14 +17,28 @@ use constant BUSINESS => "Meeting/Seminar/Conference";
 
 before_template sub {
     my $tokens = shift;
-    $tokens->{is_work_day} = sub { return !is_uk_holiday(@_)};
+    $tokens->{is_work_day} = \&is_work_day;
 };
+
+sub is_work_day {
+    my @args = @_;
+    if (is_uk_holiday(@args)) {
+        return false;
+    }
+    for my $extra_hol (@{ setting("extra_hols") }) {
+        if (make_ymd_string(@$extra_hol) eq make_ymd_string(@args)) {
+            return false;
+        }
+    }
+    return true;
+}
 
 get '/' => sub {
-    template 'index';
+    my $dt = DateTime->now;
+    redirect '/' . $dt->year . '/' . $dt->month;
 };
 
-my $year              = qr/\d{4}/;
+my $year_re           = qr/\d{4}/;
 my $months_as_numbers = join( '|', 1 .. 12 );
 my $two_digit_months  = join( '|', map {sprintf("%02d", $_)} 1 .. 12 );
 my $days_as_numbers   = join( '|', 1 .. 31 );
@@ -65,8 +84,8 @@ my $month_handler = sub {
     };
 };
 
-get qr!/($year)/($months_as_numbers)! => $month_handler; 
-get qr!/($year)/($two_digit_months)! => $month_handler; 
+get qr!/($year_re)/($months_as_numbers)! => $month_handler; 
+get qr!/($year_re)/($two_digit_months)! => $month_handler; 
 
 get '/profile' => sub {
     my $user = schema('away')->resultset('Employee')
@@ -90,20 +109,52 @@ get '/profile' => sub {
         user          => $user,
         half_days_off => \@half_days_off,
         leave_calculator => \&get_available_leave,
+        get_leave_years => \&get_leave_years,
     };
 };
 
+sub _parse_date {
+    my $date = shift;
+    my ($y, $m, $d) = split(/-/, $date);
+    my $dt = DateTime->new(year => $y, month => $m, day => $d);
+    return $dt;
+}
+
+sub get_leave_years {
+    my $user = shift;
+    my @years = uniq(sort(map {_parse_date($_->day)->year} $user->leave_periods));
+    return @years;
+}
+
 sub get_available_leave {
     my $user = shift;
-    my $year = shift || (localtime)[5] + 1900;
+    my ($y, $m, $d) = @_;
+    my $now = (@_ == 3) 
+        ? DateTime->new(year => $y, month => $m, day => $d)
+        : DateTime->now;
+
     my $allocation = $user->holiday_allowance;
+    my ($nym, $nyd) = @{ setting("year_begins") };
+    my $ny = DateTime->new(year => $now->year, month => $nym, day => $nyd);
+    my ($start, $end);
+    if ($now < $ny) {
+        $end = $ny;
+        $start = DateTime->new(
+            year => $now->year - 1, month => $nym, day => $nyd);
+    } else {
+        $start = $ny;
+        $end =  DateTime->new(
+            year => $now->year + 1, month => $nym, day => $nyd);
+    }
+
     my $rs = $user->search_related('leave_periods', {
             category => {'!=' => BUSINESS},
         })->search({
-            day => {'>=', "$year-01-01"},
+            day => {'>=', $start->ymd},
         })->search({
-            day => {'<=', "$year-12-31"},
+            day => {'<', $end->ymd},
         });
+    debug($rs->as_query);
     return $allocation - ($rs->count / 2);
 }
 
@@ -134,7 +185,7 @@ post '/add_period' => sub {
 
         if ($category ne "REMOVE") {
             if ($category eq BUSINESS 
-                    or get_available_leave($user, $y) > 0) {
+                    or get_available_leave($user, $y, $m, $d) > 0) {
                 push @added, $period;
                 $user->add_to_leave_periods(
                     {
@@ -159,6 +210,12 @@ post '/add_period' => sub {
         }
     );
 };
+
+sub make_ymd_string {
+    my ($y, $m, $d) = @_;
+    my $ymd = join('-', map &pad2d, $y, $m, $d);
+    return $ymd;
+}
 
 sub pad2d  {
     return sprintf("%02d", $_);

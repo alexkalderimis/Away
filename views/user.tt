@@ -8,11 +8,27 @@
         <td>Leave allocated:</td>
         <td>[% half_days_off.size / 2 %]</td>
     </tr>
-    <tr>
-        <td>Leave remaining this year:</td>
-        <td>[% leave_calculator(user) %]</td>
-    </tr>
+    [% years = get_leave_years(user).list %]
+    [% IF years.size %]
+        [% pre = years.first - 1 %]
+        [% post = years.last + 1 %]
+        [% years.unshift(pre) %]
+        [% years.push(post) %]
+
+        [% FOREACH year IN years %]
+            [% month = settings.year_begins.0 %]
+            [% day = settings.year_begins.1 %]
+            [% remaining = leave_calculator(user, year, month, day) %]
+            [% IF user.holiday_allowance != remaining %]
+                <tr>
+                    <td>Leave remaining in year beginning [% day %]/[% month %]/[% year %]:</td>
+                    <td>[% remaining %] days</td>
+                </tr>
+            [% END %]
+        [% END %]
+    [% END %]
 </table>
+
 
 <h2> Holiday Periods </h2>
 
