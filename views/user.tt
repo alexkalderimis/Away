@@ -29,10 +29,12 @@
     [% END %]
 </table>
 
+<a href="[% proxy.uri_for('/availability') %]">See others' availibility</a>
 
-<h2> Holiday Periods </h2>
 
-<div id="individual_periods">
+<h2 class="section-opener" onclick="jQuery('#individual_periods').slideToggle();"> Holiday Periods </h2>
+
+<div style="display: none;" id="individual_periods">
 <table id="period_table">
     <tr>
         <th>Purpose</th>
