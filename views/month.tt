@@ -15,8 +15,8 @@
         [% nextmonthlink = proxy.uri_for("/$year/" _ (month + 1)) %]
     [% END %]
 
-    <a href="[% lastmonthlink %]" id="back-link">&lt;&lt; Back</a>
-    <a href="[% nextmonthlink %]" id="next-link">Forward &gt;&gt;</a>
+    <a class="page-link" href="[% lastmonthlink %]" id="back-link">&lt;&lt; Back</a>
+    <a class="page-link" href="[% nextmonthlink %]" id="next-link">Forward &gt;&gt;</a>
     <span id="cal-title">[% monthname %] [% year %]</span>
     <table class="cal-table">
     <tr>
@@ -51,12 +51,25 @@
                 <span class="date-label">[% date %]</span>
                 [% IF loop.count <= 5 %] 
                     [% IF is_work_day(year, month, date) %]
-            <div class="am day-half" id="[% year %]-[% month %]-[% padded(date) %]-am"></div>
-            <div class="pm day-half" id="[% year %]-[% month %]-[% padded(date) %]-pm"></div>
+
+    [% FOREACH am_pm IN ["am", "pm"] %]
+      [% parts = [ year, month, padded(date), am_pm ] %]
+      [% key = parts.join('-') %]
+      [% period = allocated.$key %]
+      [% safeCat = period.category.replace('[^A-Za-z0-9]+', '-') %]
+      [% shortCat = period.category.replace('\/.*', '') %]
+
+      <div class="[% am_pm %] day-half [% "allocated-$safeCat" %]" 
+           id="[% key %]">
+           [% IF period %]
+    [% shortCat %][% IF period.note %]: [% period.note %][% END %]
+           [% END %]
+      </div>
+    [% END %]
                     [% ELSE %]
-                        <div class="cal-holiday">
-                            Public Holiday
-                        </div>
+    <div class="cal-holiday">
+        Public Holiday
+    </div>
                     [% END %]
                 [% END %]
             [% ELSE %]
@@ -80,146 +93,9 @@
     <button id="add-period" class="period-controls" disabled>Add Leave Period</button>
     <button disabled class="period-controls" id="clear-all">Clear selection</button>
 
+    <a href="[% proxy.uri_for("/availability/$year/$month") %]">
+        See others' availability
+    </a>
+
 </div>
-
-<script type="text/javascript">
-var last_selected;
-var DISABLED = "disabled";
-
-function setButtonState() {
-    var selector = '.period-controls';
-    if (jQuery('.cal-selected.day-half').length) {
-        jQuery(selector).attr(DISABLED, false);
-    } else {
-        jQuery(selector).attr(DISABLED, true);
-    }
-}
-
-function getClassAndText(period) {
-    var cssClass = "allocated-" 
-                    + period.category.replace(/[^A-Za-z0-9]+/g, '-');
-    var text = period.category.replace(/\/.*/, "") + ": " + period.note;
-    return {cssClass: cssClass, text: text};
-}
-
-var getAllocatedClasses = function(idx, cn) {
-    var currentClasses = cn.split(' ');
-    var ret = [];
-    for (var i=0,l=currentClasses.length;i<l;i++) {
-        if (currentClasses[i].match(/allocated/)) {
-        ret.push(currentClasses[i]);
-        }
-    }
-    return ret.join(" ");
-};
-
-function sendPeriodRequest(ids) {
-    jQuery.ajax({
-        headers: {
-            authorization: "[% request.headers.authorization %]"
-        },
-        type: "POST",
-        traditional: true,
-        url: "[% proxy.uri_for('/add_period') %]",
-        data: {
-            user: "[% request.user %]",
-            half_days: ids,
-            note: jQuery('#period-reason').val(),
-            category: jQuery('#period-category').val()
-        },
-        dataType: "json",
-        success: function(data) {
-            var allocatedIds = data.ids;
-                
-            var parsed = getClassAndText(data);
-            for (var i=0, l=allocatedIds.length;i<l;i++) {
-                var id = allocatedIds[i];
-                var halfDay = jQuery('#' + id)
-                            .removeClass('cal-selected')
-                            .removeClass(getAllocatedClasses)
-                            .text("");
-                if (data.category !== "REMOVE") {
-                    halfDay.removeClass('cal-selected')
-                            .addClass(parsed.cssClass)
-                            .text(parsed.text);
-                }
-            }
-            if (! data.all_added) {
-    alert("Sorry, not all your requested leave could be allocated. You may only allocate business away periods, and vaction time within your holiday allowance");
-            }
-        }
-    });
-}
-
-jQuery(function() {
-    var initallyAllocated = [
-        [% FOREACH period IN allocated.all %]
-        {
-    id: "[% period.day %]-[% (period.is_pm) ? "pm" : "am" %]",
-    category: "[% period.category %]",
-    note: "[% period.note %]"
-        }[% UNLESS loop.last %],[% END %]
-        [% END %]
-    ];
-    for (var i=0,l=initallyAllocated.length;i<l;i++) {
-        var parsed = getClassAndText(initallyAllocated[i]);
-        jQuery('#' + initallyAllocated[i].id).addClass(parsed.cssClass)
-                            .text(parsed.text);
-    }
-    jQuery('#clear-all').click(function() {
-        jQuery('.day-half').removeClass("cal-selected");
-        setButtonState();
-    });
-    jQuery('.cal-week.cal-cell').click(function() {
-        var parts = this.id.split("-");
-        var dates = parts[2].split(":");
-        var startDate = dates[0];
-        var endDate = dates[1];
-        var halfDays = jQuery('.day-half');
-        var startString = [parts[0], parts[1], startDate, "aa"].join("-");
-        var endString = [parts[0], parts[1], endDate, "zz"].join("-");
-        halfDays.filter(function() {
-            if ((this.id.localeCompare(startString) >= 0)
-                && (this.id.localeCompare(endString) <= 0)) {
-                return true;
-            } 
-            return false;
-        }).toggleClass("cal-selected");
-        setButtonState();
-    });
-    jQuery('#add-period').click(function(ev) {
-        var selected = jQuery('.cal-selected.day-half');
-        var ids = selected.map(function() {
-            return this.id;
-            }).get();
-        sendPeriodRequest(ids);
-    });
-    jQuery('.day-half').click(function(ev) {
-        var selectedClass = 'cal-selected';
-        if (ev.shiftKey) {
-            var halfDays = jQuery('.day-half');
-            var sortingUp = (this.id >= last_selected);
-            console.log("Sorting up");
-            var that = this;
-            halfDays.each(function(idx, elem) {
-                if (sortingUp) {
-                    if ((elem.id > last_selected) && (elem.id <= that.id)) {
-                        jQuery(elem).toggleClass(selectedClass);
-                    }
-                } else {
-                    if (elem.id < last_selected && elem.id >= that.id) {
-                        jQuery(elem).toggleClass(selectedClass);
-                    }
-                }
-            });
-        } else {
-            jQuery(this).toggleClass('cal-selected');
-        }
-        last_selected = this.id;
-        setButtonState();
-        return false;
-    });
-});
-</script>
-
 
