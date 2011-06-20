@@ -18,10 +18,14 @@ use constant BUSINESS => "Meeting/Seminar/Conference";
 before_template sub {
     my $tokens = shift;
     $tokens->{is_work_day} = \&is_work_day;
+    $tokens->{is_weekend} = \&is_weekend;
 };
 
 sub is_work_day {
-    my @args = @_;
+    my @args = (@_ == 1) ? split(/-/, $_[0]) : @_;
+    if (is_weekend(@args)) {
+        return false;
+    }
     if (is_uk_holiday(@args)) {
         return false;
     }
@@ -33,6 +37,15 @@ sub is_work_day {
     return true;
 }
 
+sub is_weekend {
+    my ($y, $m, $d) = (@_ == 1) ? split(/-/, $_[0]) : @_;
+    my $dt = DateTime->new(year => $y, month => $m, day => $d);
+    if ($dt->day_of_week > 5) {
+        return true;
+    }
+    return false;
+}
+
 get '/' => sub {
     my $dt = DateTime->now;
     redirect '/' . $dt->year . '/' . $dt->month;
@@ -41,7 +54,77 @@ get '/' => sub {
 my $year_re           = qr/\d{4}/;
 my $months_as_numbers = join( '|', 1 .. 12 );
 my $two_digit_months  = join( '|', map {sprintf("%02d", $_)} 1 .. 12 );
-my $days_as_numbers   = join( '|', 1 .. 31 );
+my $months_variations = join( '|', $months_as_numbers, $two_digit_months);
+my $days_as_numbers   = join( '|', 1 .. 31, map(&pad2d, 1 .. 31) );
+
+get '/availability' => sub {
+    my $now = DateTime->now;
+    redirect "/availability/" . $now->ymd('/');
+};
+
+get qr!/availability/($year_re)/($months_variations)! => sub {
+    my ($y, $m) = splat;
+    redirect "/availability/$y/$m/1" 
+};
+
+get qr!/availability/($year_re)/($months_variations)/($days_as_numbers)! => sub {
+    my ( $year, $month, $day ) = splat;
+
+    my $start_date = DateTime->new(
+        year => $year, month => $month, day => $day);
+    my $end_date = $start_date->clone->add( days => 7 );
+    my $prior_date = $start_date->clone->subtract( days => 7 );
+
+    my %leave_on_for_in;
+    my %names = get_emp_names();
+
+    for (my $i = $start_date->clone; $i < $end_date; $i->add(days => 1)) {
+        $leave_on_for_in{$i->ymd} = {};
+        my $leave = get_all_leave_on($i->ymd);
+        while (my $res = $leave->next) {
+            my $emp = $res->employee->name;
+            my $am_pm = $res->is_pm ? "pm" : "am";
+            $leave_on_for_in{$i->ymd}{$emp}{$am_pm} = $res->category;
+        }
+    }
+
+    return template availability => {
+        year => $year,
+        month => $month,
+        day => $day,
+        leave_on_for_in => \%leave_on_for_in,
+        names => \%names,
+        this_week => $start_date->ymd('/'),
+        one_week_back => $prior_date->ymd('/'),
+        one_week_forward => $end_date->ymd('/'),
+    };
+};
+
+sub get_emp_names {
+    my $rs = schema('away')->resultset('Employee')->search(
+        {
+            # All
+        },
+        {
+            "order_by" => {-asc => ['name']},
+        },
+    );
+    return map {$_->name => $_->crsid} $rs->all;
+}
+
+# Takes either y-m-d or y, m, d
+sub get_all_leave_on {
+    my ($y, $m, $d) = (@_ == 1) ? split(/-/, $_[0]) : @_;
+    my $rs = schema('away')->resultset('LeavePeriod')->search(
+        {
+            day => make_ymd_string($y, $m, $d),
+        },
+        {
+            prefetch => 'employee',
+        }
+    );
+    return $rs;
+}
 
 my $month_handler = sub {
 
@@ -73,6 +156,11 @@ my $month_handler = sub {
              day => { '<=' => $end }
          }
        );
+    my %allocated_periods;
+    while (my $p = $rs->next) {
+        my $key = $p->day . '-' . (($p->is_pm) ? "pm" : "am");
+        $allocated_periods{$key} = $p;
+    }
     debug(to_dumper({query => $rs->as_query, count => $rs->count}));
 
     return template month => {
@@ -80,7 +168,8 @@ my $month_handler = sub {
         month     => sprintf("%02d", $month),
         monthname => $month_name,
         user      => $user,
-        allocated => $rs,
+        allocated => \%allocated_periods,
+        view_name => 'month',
     };
 };
 
@@ -259,5 +348,6 @@ post '/cancel_leave' => sub {
     }
     return to_json({deleted_count => $deleted_count});
 };
+
 
 true;
