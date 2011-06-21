@@ -1,0 +1,4 @@
+<!-- START: [% component.name %] -->
+<span>Logged in as <a href="[% proxy.uri_for('/profile') %]">[% request.user %]</a></span>
+(<a href="[% proxy.uri_for('/').replace('\/\/', '//logout@') %]">Switch User</a>)
+<!-- END: [% component.name %] -->
