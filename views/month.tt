@@ -1,5 +1,5 @@
 <!-- START: [% component.name %] -->
-<span>Logged in as <a href="[% proxy.uri_for('/profile') %]">[% request.user %]</a></span>
+[% INCLUDE logged_in_as.tt %]
 <div id="cal">
     [% USE cal = Calendar.Simple(month, year, 1) %]
     [% USE padded = format('%02d') %]
@@ -63,7 +63,7 @@
       <div class="[% am_pm %] day-half [% "allocated-$safeCat" %]" 
            id="[% key %]">
            [% IF period %]
-    [% shortCat %][% IF period.note %]: [% period.note %][% END %]
+             [% (period.note) ? period.note : shortCat %]
            [% END %]
       </div>
     [% END %]

@@ -13,7 +13,7 @@ function setButtonState() {
 function getClassAndText(period) {
     var cssClass = "allocated-" 
                     + period.category.replace(/[^A-Za-z0-9]+/g, '-');
-    var text = period.category.replace(/\/.*/, "") + ": " + period.note;
+    var text = (period.note) ? period.note : period.category.replace(/\/.*/, "");
     return {cssClass: cssClass, text: text};
 }
 
