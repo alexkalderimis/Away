@@ -72,8 +72,8 @@ get qr!/availability/($year_re)/($months_variations)/($days_as_numbers)! => sub 
 
     my $start_date = DateTime->new(
         year => $year, month => $month, day => $day);
-    my $end_date = $start_date->clone->add( days => 7 );
-    my $prior_date = $start_date->clone->subtract( days => 7 );
+    my $end_date = $start_date->clone->add( months => 1 );
+    my $prior_date = $start_date->clone->subtract( months => 1 );
 
     my %leave_on_for_in;
     my %names = get_emp_names();
@@ -89,6 +89,7 @@ get qr!/availability/($year_re)/($months_variations)/($days_as_numbers)! => sub 
     }
 
     return template availability => {
+        dt => $start_date,
         year => $year,
         month => $month,
         day => $day,
@@ -161,7 +162,6 @@ my $month_handler = sub {
         my $key = $p->day . '-' . (($p->is_pm) ? "pm" : "am");
         $allocated_periods{$key} = $p;
     }
-    debug(to_dumper({query => $rs->as_query, count => $rs->count}));
 
     return template month => {
         year      => $year,

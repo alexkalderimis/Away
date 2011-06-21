@@ -1,22 +1,24 @@
-<span>Logged in as <a href="[% proxy.uri_for('/profile') %]">[% request.user %]</a></span>
-<h1> Availability </h1>
+<!-- START [% component.name %] -->
 
-<div id="page-links">
-    <a class="page-link" 
-        href="[% proxy.uri_for('/availability/' _ one_week_back ) %]" 
-        id="[% one_week_back %]">&lt;&lt; Back</a>
-    <a class="page-link"  
-        href="[% proxy.uri_for('/availability/' _ one_week_forward ) %]" 
-        id="[% one_week_forward %]">Forward &gt;&gt;</a>
-</div>
+[% INCLUDE logged_in_as.tt %]
 
-<div id="table-container">
-<table class="cal-table inner" id="#availability">
+<div id="availability-con"><div id="availability">
+
+<a class="page-link back" 
+    href="[% proxy.uri_for('/availability/' _ one_week_back ) %]" 
+    id="[% one_week_back %]">&lt;&lt; Back</a>
+<a class="page-link forward"  
+    href="[% proxy.uri_for('/availability/' _ one_week_forward ) %]" 
+    id="[% one_week_forward %]">Forward &gt;&gt;</a>
+
+<span id="cal-title"> Availability in [% dt.month_name %] [% dt.year %]</span>
+
+<table class="cal-table inner">
     <tr>
         <th> Name </th>
         [% FOREACH day IN leave_on_for_in.keys.sort %]
 
-        <th> <a href="[% proxy.uri_for('/'_ day.replace('-\d+$', '').replace('-', '/')) %]">[% day %]</a> </th>
+        <th> <a href="[% proxy.uri_for('/'_ day.replace('-\d+$', '').replace('-', '/')) %]">[% day.replace('.*-', '') %]</a> </th>
         [% END %]
     </tr>
     <tbody>
@@ -31,21 +33,15 @@
                 [% FOREACH day IN leave_on_for_in.keys.sort %]
                     [% todaysLink = proxy.uri_for('/'_ day.replace('-\d+$', '').replace('-', '/')) %]
                     [% dayClass = (is_weekend(day)) ? "cal-weekend" : "cal-weekday" %]
-                    <td class="cal-cell [% dayClass %]">
+                    <td class="cal-cell cal-month-cell [% dayClass %]">
                         [% IF dayClass == "cal-weekend" %]
-                            <span class="date-label">W/E</span>
                         [% ELSIF not is_work_day(day) %]
-                            <div class="cal-holiday">Public Holiday</div>
+                            <div class="cal-holiday"></div>
                         [% ELSE %]
                             [% FOREACH am_pm IN [ "am", "pm" ] %]
                             [% lp = leave_on_for_in.$day.$name.$am_pm %]
                             <div class="[% am_pm %] day-half [% IF lp %] [% "allocated-" _ lp.replace('[^A-Za-z0-9]+', '-') %][% END %]">
-                                [% am_pm | upper %]
-                                [% IF lp %]
-                                    [% IF thisIsUser %]<a href="[% todaysLink %]">[% END %]
-                                        [% lp.replace('\/.*', '') %]
-                                    [% IF thisIsUser %]</a>[% END %]
-                                [% END %]
+                                &nbsp;
                             </div>
                             [% END %]
                         [% END %]
@@ -55,7 +51,8 @@
         [% END %]
     </tbody>
 </table>
-</div>
+
+</div></div>
 
 <style type="text/css">
     
@@ -68,8 +65,7 @@
 function rewireLinks() {
     jQuery('#page-links a').click(function() {
         var url = this.href;
-        jQuery('#table-container').load(url + ' table');
-        jQuery('#page-links').load(url + ' #page-links a', rewireLinks);
+        jQuery('#availability-con').load(url + ' #availability', rewireLinks);
         var stateObject = {date: "[% this_week %]"};
         var path = url.replace(/\w+\/\/:[^\/]+/, '');
         history.pushState(stateObject, this.id, path);
@@ -81,9 +77,9 @@ jQuery(rewireLinks);
 
 window.onpopstate = function(event) {
     var url = window.location.toString();
-    jQuery('#table-container').load(url + ' table');
-    jQuery('#page-links').load(url + ' #page-links a', rewireLinks);
+    jQuery('#availability-con').load(url + ' #availability', rewireLinks);
 };
 
 </script>
 
+<!-- END [% component.name %] -->

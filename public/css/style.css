@@ -225,7 +225,7 @@ font-size: 10px;
 }
 
 .cal-weekday {
-    font-size: 14px;
+    font-size: 12px;
     font-family: 'Droid Serif', Georgia, 'Linux Libertine', Palatino, 'Palatino Linotype', 'Book Antiqua', 'Times New Roman', serif;
     background-color: white;
     color: #333;
@@ -278,8 +278,8 @@ th.cal-header.cal-week {
     display: inline;
     text-align: center;
     width: 100%;
-    padding-left: 200px;
-    padding-right: 200px;
+    padding-left: 150px;
+    padding-right: auto;
 }
 
 div#page {
@@ -293,23 +293,24 @@ div#page {
 }
 
 .allocated-Vacation {
-    background-color: #75DDAB;
+    background-color: #ACF53D;
     text-align: right;
 }
 
 .allocated-Meeting-Seminar-Conference {
-    background-color: #7975DD;
+    background-color: #36BBCE;
     text-align: right;
 }
 
 .allocated-Other {
-    background-color: #D45050;
+    background-color: #FF9B40;
     text-align: right;
 }
 
 .allocated-20-time {
-    background-color: #D450B9;
+    background-color: #A02860;
     text-align: right;
+    color: white;
 }
 
 .cal-holiday {
@@ -329,7 +330,7 @@ div#page {
 }
 
 .cal-selected {
-    background-color: #58AFD0;
+    background-color: #8B6ED7;
     cursor: pointer;
 }
 
@@ -350,4 +351,17 @@ a.page-link:hover {
     color: white;
     background-color: #555;
 }
+
+.cal-month-cell {
+    width: 2.9%;
+}
+
+.page-link.back {
+    float: left;
+}
+
+.page-link.forward {
+    float: right;
+}
+
 
