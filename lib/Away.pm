@@ -3,73 +3,39 @@ package Away;
 use strict;
 use warnings;
 
+use Away::DB::Functions;
+use Away::Logic;
+
 use Dancer ':syntax';
 use Dancer::Plugin::ProxyPath;
-use Dancer::Plugin::DBIC qw(schema);
 
-use Date::Holidays::UK::EnglandAndWales qw/is_uk_holiday/;
 use DateTime;
-use List::MoreUtils qw/uniq/;
 
 our $VERSION = '0.1';
 
-use constant BUSINESS => "Meeting/Seminar/Conference";
+my $months_as_numbers = join( '|', 1 .. 12, map( &Away::Logic::pad2d, 1 .. 12 ) );
+my $days_as_numbers   = join( '|', 1 .. 31, map( &Away::Logic::pad2d, 1 .. 31 ) );
+
+my $year_re           = qr/\d{4}/;
+my $months_re         = qr/$months_as_numbers/;
+my $days_re           = qr/$days_as_numbers/;
 
 before_template sub {
     my $tokens = shift;
-    $tokens->{is_work_day} = \&is_work_day;
-    $tokens->{is_weekend}  = \&is_weekend;
-    $tokens->{datetime}    = \&_parse_date;
+    $tokens->{is_work_day} = \&Away::Logic::is_work_day;
+    $tokens->{is_weekend}  = \&Away::Logic::is_weekend;
+    $tokens->{datetime}    = \&Away::Logic::parse_dt;
 };
 
-sub Employee() {
-    return schema('away')->resultset('Employee');
-}
-
-sub LeavePeriod() {
-    return schema('away')->resultset('LeavePeriod');
-}
-
-sub is_work_day {
-    my @args = ( @_ == 1 ) ? split( /-/, $_[0] ) : @_;
-    if ( is_weekend(@args) ) {
-        return false;
-    }
-    if ( is_uk_holiday(@args) ) {
-        return false;
-    }
-    for my $extra_hol ( @{ setting("extra_hols") } ) {
-        if ( make_ymd_string(@$extra_hol) eq make_ymd_string(@args) ) {
-            return false;
-        }
-    }
-    return true;
-}
-
-sub is_weekend {
-    my ( $y, $m, $d ) = ( @_ == 1 ) ? split( /-/, $_[0] ) : @_;
-    my $dt = DateTime->new( year => $y, month => $m, day => $d );
-    if ( $dt->day_of_week > 5 ) {
-        return true;
-    }
-    return false;
-}
+#### ROUTE DEFINITIONS ####
 
 get '/' => sub {
     my $dt = DateTime->now;
     redirect '/' . $dt->year . '/' . $dt->month;
 };
 
-my $months_as_numbers = join( '|', 1 .. 12, map( &pad2d, 1 .. 12 ) );
-my $days_as_numbers   = join( '|', 1 .. 31, map( &pad2d, 1 .. 31 ) );
-
-my $year_re           = qr/\d{4}/;
-my $months_re         = qr/$months_as_numbers/;
-my $days_re           = qr/$days_as_numbers/;
-
 get '/availability' => sub {
-    my $now = DateTime->now;
-    redirect "/availability/" . $now->ymd('/');
+    redirect "/availability/" . DateTime->now->ymd('/');
 };
 
 get qr!/availability/($year_re)/($months_re)! => sub {
@@ -87,7 +53,7 @@ sub handleAvailibility {
     my $only_table = shift;
     my ( $year, $month, $day ) = splat;
 
-    my $start_date = _parse_date($year, $month, $day);
+    my $start_date = parse_dt($year, $month, $day);
     my $end_date = $start_date->clone->add( months => 1 );
     my $prior_date = $start_date->clone->subtract( months => 1 );
 
@@ -120,28 +86,6 @@ sub handleAvailibility {
         view_name        => 'availability',
     }, $opts;
 };
-
-sub get_emp_names {
-    my $rs = Employee->search(
-        {
-
-            # All
-        },
-        { "order_by" => { -asc => ['name'] }, },
-    );
-    return map { $_->name => $_->crsid } $rs->all;
-}
-
-
-# Takes either y-m-d or y, m, d
-sub get_all_leave_on {
-    my ( $y, $m, $d ) = ( @_ == 1 ) ? split( /-/, $_[0] ) : @_;
-    my $rs = LeavePeriod->search( 
-        { day      => make_ymd_string( $y, $m, $d ), },
-        { prefetch => 'employee', }
-    );
-    return $rs;
-}
 
 get qr!/($year_re)/($months_re)! => sub {
 
@@ -208,55 +152,6 @@ get '/profile' => sub {
     };
 };
 
-sub _parse_date {
-    my ( $y, $m, $d ) = ( @_ == 3 ) ? @_ : split( /-/, $_[0] );
-    my $dt = DateTime->new( year => $y, month => $m, day => $d );
-    return $dt;
-}
-
-sub get_leave_years {
-    my $user = shift;
-    my @years =
-      uniq( sort( map { _parse_date( $_->day )->year } $user->leave_periods ) );
-    return @years;
-}
-
-sub get_available_leave {
-    my $user = shift;
-    my ( $y, $m, $d ) = @_;
-    my $now =
-      ( @_ == 3 )
-      ? DateTime->new( year => $y, month => $m, day => $d )
-      : DateTime->now;
-
-    my $allocation = $user->holiday_allowance;
-    my ( $nym, $nyd ) = @{ setting("year_begins") };
-    my $ny = DateTime->new( year => $now->year, month => $nym, day => $nyd );
-    my ( $start, $end );
-    if ( $now < $ny ) {
-        $end = $ny;
-        $start =
-          DateTime->new( year => $now->year - 1, month => $nym, day => $nyd );
-    }
-    else {
-        $start = $ny;
-        $end =
-          DateTime->new( year => $now->year + 1, month => $nym, day => $nyd );
-    }
-
-    my $rs = $user->search_related(
-        'leave_periods',
-        {
-            -and => [
-                category => { '!=' => BUSINESS },
-                day      => { '>=' => $start->ymd },
-                day      => { '<'  => $end->ymd },
-            ],
-        }
-    );
-    return $allocation - ( $rs->count / 2 );
-}
-
 post '/add_period' => sub {
     my $crsid     = param "user";
     my $half_days = param "half_days";
@@ -313,16 +208,6 @@ post '/add_period' => sub {
         }
     );
 };
-
-sub make_ymd_string {
-    my ( $y, $m, $d ) = @_;
-    my $ymd = join( '-', map &pad2d, $y, $m, $d );
-    return $ymd;
-}
-
-sub pad2d {
-    return sprintf( "%02d", $_ );
-}
 
 post '/cancel_leave' => sub {
     my $crsid   = param "crsid";
