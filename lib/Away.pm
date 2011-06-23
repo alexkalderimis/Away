@@ -251,8 +251,7 @@ post '/cancel_leave' => sub {
 get '/get_new_availability_hrefs' => sub {
     my $currentHref = param "currentHref";
     my @parts = split('/', $currentHref);
-    my $dt = _parse_date(@parts[-3, -2, -1]);
-    debug("URL: ", proxy->uri_for('/'));
+    my $dt = parse_dt(@parts[-3, -2, -1]);
     my $ret = {
         monthName => $dt->month_name,
         year => $dt->year,
