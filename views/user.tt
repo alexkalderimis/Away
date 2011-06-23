@@ -9,6 +9,7 @@
         <td>[% half_days_off.size / 2 %]</td>
     </tr>
     [% years = get_leave_years(user).list %]
+    [% active_periods = [] %]
     [% IF years.size %]
         [% pre = years.first - 1 %]
         [% post = years.last + 1 %]
@@ -22,6 +23,7 @@
             [% IF user.holiday_allowance != remaining %]
                 <tr>
                     <td>Leave remaining in year beginning [% day %]/[% month %]/[% year %]:</td>
+                    [% active_periods.push( datetime(year, month, day) ) %]
                     <td>[% remaining %] days</td>
                 </tr>
             [% END %]
@@ -47,32 +49,48 @@
     [% 
         current_period = {}
         count = 0 
+        current_year_cutoff = 0
     %]
     [% FOREACH hd IN half_days_off %]
         [% count = count + 1 %]
         [% IF current_period.note != hd.note 
             or current_period.category != hd.category %]
+
+            [% IF not current_year_cutoff or current_year_cutoff < datetime(hd.day) %]
+                [% thisYear = active_periods.shift %]
+                <tr><th>Year [% thisYear.dmy('/') %] - [% thisYear.add("years", 1).subtract("days", 1).dmy('/') %]</th></tr>
+                [% current_year_cutoff = thisYear %]
+            [% END %]
+
             <tr> 
                 <td>
                     <input type="checkbox" id="holperiod-[% hd.id %]"/>
                     [% hd.note %]
                 </td>
-                <td>[% hd.category %]</td>
-                [% parts = hd.day.split('-') %]
-                <td><a href="[% proxy.uri_for('/' _ parts.0 _ '/' _ parts.1 ) %]">[% hd.day %]</a></td>
+                <td>
+                    [% hd.category %]
+                </td>
+                <td>
+                    [% dt = datetime(hd.day) %]
+                    <a href="[% proxy.uri_for('/' _ dt.year _ '/' _ dt.month ) %]">[% hd.day %]</a>
+                </td>
+
             [% current_period = hd %]
         [% END %]
         [% IF loop.last || 
             (loop.next.note != current_period.note 
              or loop.next.category != current_period.category) %]
-                [% bits = hd.day.split('-') %]
+
                 <td>
-<input type="hidden" id="perend-[% current_period.id %]" value="[% hd.id %]"/>
-<a href="[% proxy.uri_for('/' _ bits.0 _ '/' _ bits.1 ) %]">[% hd.day %]
-</a>
+                    [% dt = datetime(hd.day) %]
+                    <input type="hidden" id="perend-[% current_period.id %]" value="[% hd.id %]"/>
+                    <a href="[% proxy.uri_for('/' _ dt.year _ '/' _ dt.month ) %]">[% hd.day %]</a>
                 </td>
-                <td>[% count / 2 %]</td>
+                <td>
+                    [% count / 2 %]
+                </td>
             </tr>
+
             [% count = 0 %]
         [% END %]
     [% END %]

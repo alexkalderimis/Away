@@ -2,7 +2,7 @@
 
 [% INCLUDE logged_in_as.tt %]
 
-<div id="availability-con"><div id="availability">
+<div>
 
 <a class="page-link back" 
     href="[% proxy.uri_for('/availability/' _ one_week_back ) %]" 
@@ -11,75 +11,19 @@
     href="[% proxy.uri_for('/availability/' _ one_week_forward ) %]" 
     id="[% one_week_forward %]">Forward &gt;&gt;</a>
 
-<span id="cal-title"> Availability in [% dt.month_name %] [% dt.year %]</span>
+<span id="cal-title"> Availability in <span id="month-name">[% dt.month_name %]</span> <span id="year">[% dt.year %]</span></span>
+</div>
 
-<table class="cal-table inner">
-    <tr>
-        <th> Name </th>
-        [% FOREACH day IN leave_on_for_in.keys.sort %]
+<div id="availability-con" class="slide">
 
-        <th> <a href="[% proxy.uri_for('/'_ day.replace('-\d+$', '').replace('-', '/')) %]">[% day.replace('.*-', '') %]</a> </th>
-        [% END %]
-    </tr>
-    <tbody>
-        [% FOREACH name IN names.keys.sort %]
-            [% thisIsUser = (names.$name == request.user) %]
-            <tr>
-                <td> 
-                    [% IF thisIsUser %]<a href="[% proxy.uri_for('/profile') %]">[% END %]
-                        [% name %] 
-                    [% IF thisIsUser %]</a>[% END %]
-                </td>
-                [% FOREACH day IN leave_on_for_in.keys.sort %]
-                    [% todaysLink = proxy.uri_for('/'_ day.replace('-\d+$', '').replace('-', '/')) %]
-                    [% dayClass = (is_weekend(day)) ? "cal-weekend" : "cal-weekday" %]
-                    <td class="cal-cell cal-month-cell [% dayClass %]">
-                        [% IF dayClass == "cal-weekend" %]
-                        [% ELSIF not is_work_day(day) %]
-                            <div class="cal-holiday"></div>
-                        [% ELSE %]
-                            [% FOREACH am_pm IN [ "am", "pm" ] %]
-                            [% lp = leave_on_for_in.$day.$name.$am_pm %]
-                            <div class="[% am_pm %] day-half [% IF lp %] [% "allocated-" _ lp.replace('[^A-Za-z0-9]+', '-') %][% END %]">
-                                &nbsp;
-                            </div>
-                            [% END %]
-                        [% END %]
-                    </td>
-                [% END %]
-            </td>
-        [% END %]
-    </tbody>
-</table>
+[% INCLUDE availability_table.tt %]
 
-</div></div>
+</div>
 
 <style type="text/css">
     
     .am, .pm {cursor: default;}
 
 </style>
-
-<script type="text/javascript">
-
-function rewireLinks() {
-    jQuery('#page-links a').click(function() {
-        var url = this.href;
-        jQuery('#availability-con').load(url + ' #availability', rewireLinks);
-        var stateObject = {date: "[% this_week %]"};
-        var path = url.replace(/\w+\/\/:[^\/]+/, '');
-        history.pushState(stateObject, this.id, path);
-        return false;
-    });
-}
-
-jQuery(rewireLinks);
-
-window.onpopstate = function(event) {
-    var url = window.location.toString();
-    jQuery('#availability-con').load(url + ' #availability', rewireLinks);
-};
-
-</script>
 
 <!-- END [% component.name %] -->
