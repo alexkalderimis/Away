@@ -172,7 +172,7 @@ margin-bottom: 5px;
 }
 
 
-h1, h2, h3, h4, h5 {
+h1, h2, h3, h4, h5, #renamer {
 font-family: sans-serif;
 margin: 1.2em 0 0.6em 0;
 }
@@ -368,4 +368,28 @@ a.page-link:hover {
     float: right;
 }
 
+a.name-editing {
+/*    font-size: 0.3em; */
+}
+
+#renamer {
+    display: block;
+    font-size: 28px;
+}
+
+#user-summary, #period_table {
+    margin: 25px;
+    border-collapse: collapse;
+}
+
+#user-summary td, #period_table td {
+    padding: 3px;
+    padding-right: 25px;
+    background-color: #ffd;
+    border: 1px solid #fc0;
+}
+
+#period_table th {
+    padding-top: 10px;
+}
 
