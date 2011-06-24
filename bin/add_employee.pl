@@ -1,27 +1,32 @@
 use strict;
 use warnings;
-use File::Basename qw/dirname/;
 use Crypt::SaltedHash;
-use lib dirname(__FILE__) . '/../lib';
-use Away::DB;
+use Dancer ':syntax';
+use Dancer::Config;
+use Dancer::Plugin::DBIC qw(schema);
+use Encode;
 
+binmode STDIN, ':encoding(utf8)';
+binmode STOUT, ':encoding(utf8)';
 
 my $script = __FILE__;
 
 my $usage = <<"USAGE";
 
-perl $script DB CRSID NAME HOLIDAY_ALLOWANCE [PASSWORD]
+perl $script ENVIRONMENT CRSID NAME HOLIDAY_ALLOWANCE [PASSWORD]
 
 Add an employee to the database with the given crsid, name, and holiday allowance.
 USAGE
 
 (@ARGV == 5 || @ARGV == 4) or die "Expected 4 or 5 arguments: got " . scalar(@ARGV), $usage;
 
-my ($file, $crsid, $name, $allowance, $secret) = @ARGV;
+my ($environment, $crsid, $name, $allowance, $secret) = @ARGV;
 
-die "Cannot connect to $file - the file does not exist" unless (-f $file);
+set 'environment' => $environment;
+set 'confdir' => dirname(__FILE__) . '/..';
+Dancer::Config->load();
 
-my $db = Away::DB->connect("dbi:SQLite:dbname=$file", undef, undef, {sqlite_unicode => 1}); 
+my $db = schema('away');
 
 $secret ||= generate_random_password(); 
 
@@ -31,8 +36,8 @@ $csh->add($secret);
 my $salted = $csh->generate;
 
 my $emp = $db->resultset('Employee')->create({
-            crsid => $crsid, 
-            name => $name, 
+            crsid => decode_utf8($crsid), 
+            name => decode_utf8($name), 
             holiday_allowance => $allowance,
             password_hash => $salted});
 
