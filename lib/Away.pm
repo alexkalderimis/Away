@@ -22,6 +22,7 @@ my $days_re           = qr/$days_as_numbers/;
 
 before_template sub {
     my $tokens = shift;
+    $tokens->{now}         = DateTime->now;
     $tokens->{is_work_day} = \&Away::Logic::is_work_day;
     $tokens->{is_weekend}  = \&Away::Logic::is_weekend;
     $tokens->{datetime}    = \&Away::Logic::parse_dt;
@@ -165,20 +166,20 @@ post '/add_period' => sub {
     my $user = Employee->find( { crsid => $crsid } );
     status(404) and return "Not found" unless $user;
 
-    my @added;
+    my (@added, @deleted_ids);
 
     for my $period (@periods) {
         my ( $y, $m, $d, $am_pm ) = split( /-/, $period );
         my $day = join( '-', map { sprintf( "%02d", $_ ) } $y, $m, $d );
 
         # First clear out existing ones.
-        $user->search_related(
-            'leave_periods',
-            {
-                day   => $day,
-                is_pm => ( $am_pm eq 'pm' ) ? 1 : 0,
-            }
-        )->delete();
+        my @constraints = (day   => $day, is_pm => ( $am_pm eq 'pm' ) ? 1 : 0,);
+        push @constraints, day => { '>=' => DateTime->now->strftime('%F') }
+            if ($category eq "REMOVE");
+
+        my $delenda = $user->search_related('leave_periods', { -and => \@constraints });
+        push @deleted_ids, map {$_->day . '-' . (($_->is_pm) ? "pm" : "am")} $delenda->all;
+        $delenda->delete();
 
         if ( $category ne "REMOVE" ) {
             if ( $category eq BUSINESS
@@ -197,7 +198,7 @@ post '/add_period' => sub {
         }
     }
 
-    my @ids = ( $category eq 'REMOVE' ) ? @periods : @added;
+    my @ids = ( $category eq 'REMOVE' ) ? @deleted_ids : @added;
 
     return to_json(
         {
@@ -235,6 +236,7 @@ post '/cancel_leave' => sub {
                 -and => [
                     day      => { '>=' => $first->day },
                     day      => { '<=' => $last->day },
+                    day      => { '>=' => DateTime->now->strftime('%F') },
                     category => $first->category,
                     note     => $first->note,
                 ],
@@ -259,6 +261,18 @@ get '/get_new_availability_hrefs' => sub {
         fwdLink => "" . proxy->uri_for('/availability/' . $dt->clone->add(months => 1)->ymd('/')),
     };
     return to_json($ret);
+};
+
+get '/update_user_name' => sub {
+    my $new_name = param "newName";
+    my $crsid = request->user();
+
+    my $user = Employee->find( { crsid => $crsid } );
+    status(404) and return "Not found" unless $user;
+
+    $user->update({ name => $new_name });
+
+    return to_json({newName => $new_name});
 };
 
 true;
