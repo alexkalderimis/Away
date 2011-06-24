@@ -1,5 +1,9 @@
 <h1>[% user.name %]</h1>
-<table>
+<input type="text" id="renamer" style="display:none;"/>
+<a id="rename-activator" class="name-editing">edit</a>
+<a id="name-saver" style="display:none;" class="name-editing">save</a>
+<a id="name-canceller" style="display:none;" class="name-editing">cancel</a>
+<table id="user-summary">
     <tr>
         <td>Total Holiday Allowance:</td>
         <td>[% user.holiday_allowance %]</td>
@@ -33,7 +37,6 @@
 
 <a href="[% proxy.uri_for('/availability') %]">See others' availibility</a>
 
-
 <h2 class="section-opener" onclick="jQuery('#individual_periods').slideToggle();"> Holiday Periods </h2>
 
 <div style="display: none;" id="individual_periods">
@@ -64,7 +67,7 @@
 
             <tr> 
                 <td>
-                    <input type="checkbox" id="holperiod-[% hd.id %]"/>
+                    <input type="checkbox" [% IF datetime(hd.day) < now %]disabled[% END %] id="holperiod-[% hd.id %]"/>
                     [% hd.note %]
                 </td>
                 <td>
@@ -102,6 +105,29 @@
 
 <script type="text/javascript">
 jQuery(function() {
+    jQuery('#rename-activator').click(function() {
+        var $h1 = jQuery('h1').toggle();
+        jQuery('#renamer').val($h1.text()).toggle();
+        jQuery('.name-editing').toggle();
+    });
+    jQuery('#name-saver').click(function() {
+        var $input = jQuery('#renamer');
+        var url = $BASE + "update_user_name";
+        var data = {newName: $input.val()};
+        var success = function(response) {
+            $input.toggle();
+            jQuery('h1').text(response.newName).toggle();
+            jQuery('.name-editing').toggle();
+        };
+
+        jQuery.getJSON(url, data, success);
+    });
+    jQuery('#name-canceller').click(function() {
+        var $input = jQuery('#renamer').toggle();
+        jQuery('h1').toggle();
+        jQuery('.name-editing').toggle();
+    });
+
     jQuery('#leave-canceller').click(function() {
         var selectedPeriods = jQuery(':checked');
         var ids = selectedPeriods.map(function(idx, elem) {
