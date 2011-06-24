@@ -60,7 +60,11 @@ function sendPeriodRequest(ids) {
                 }
             }
             if (! data.all_added) {
-    alert("Sorry, not all your requested leave could be allocated. You may only allocate business away periods, and vaction time within your holiday allowance");
+                if (data.category === "REMOVE") {
+                    alert("Sorry, you can only cancel leave periods that haven't already occurred. Past periods can be edited, but not cancelled.");
+                } else {
+                    alert("Sorry, not all your requested leave could be allocated. You may only allocate business away periods, and vaction time within your holiday allowance");
+                }
             }
             setButtonState();
         }
