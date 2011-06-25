@@ -9,61 +9,48 @@ function rewireLinks() {
 //        return false;
 //    });
 
-    jQuery('a.page-link.forward').click(function() {
-        var url = this.href + ".table";
-        that = this;
-        var data = null;
-        var width = jQuery('#availability-con').outerWidth();
-        var success = function(data) {
-            jQuery('#availability-con').css({overflow: "hidden"});
-            var $results = jQuery(data);
-            new Effect.Move('availability', {
-                x: -width, 
-                y: 0,
-                mode: "relative",
-                transition: Effect.Transitions.sinoidal,
-                afterFinish: function() {
-                    jQuery('#availability').remove();
-                    $results.css({"position": "relative", "top": "0px", "left": width});
-                    jQuery('#availability-con').append($results);
-                    new Effect.Move('availability', {x: -width, y: 0, mode: "relative",transition: Effect.Transitions.sinoidal});
-                }
-            });
-            updateLinkHrefs(that.href);
-        };
-        jQuery.get(url, data, success, "html");
-        return false;
-    });
+    var $fwdLink = jQuery('a.page-link.forward');
+    var $backLink = jQuery('a.page-link.back');
+    $fwdLink.unbind('click');
+    $backLink.unbind('click');
+    $fwdLink.click(getSlider($fwdLink.attr("href"), true));
+    $backLink.click(getSlider($backLink.attr("href"), false));
+}
 
-    jQuery('a.page-link.back').click(function() {
-        var url = this.href + ".table";
-        that = this;
+function getSlider(href, isFwd) {
+    return function() {
+        var url = href + ".table";
         var data = null;
         var width = jQuery('#availability-con').outerWidth();
-        var success = function(data) {
+        var success = function(response) {
             jQuery('#availability-con').css({overflow: "hidden"});
-            var $results = jQuery(data);
+            var $results = jQuery(response);
             new Effect.Move('availability', {
-                x: width, 
+                x: (isFwd) ? -width : width, 
                 y: 0,
                 mode: "relative",
                 transition: Effect.Transitions.sinoidal,
                 afterFinish: function() {
                     jQuery('#availability').remove();
-                    $results.css({"position": "relative", "top": "0px", "left": -width});
+                    var leftPos = (isFwd) ? width : -width;
+                    var leftDelta = (isFwd) ? -width : width;
+                    $results.css({"position": "relative", "top": "0px", "left": leftPos});
                     jQuery('#availability-con').append($results);
-                    new Effect.Move('availability', {x: width, y: 0, mode: "relative", transition: Effect.Transitions.sinoidal});
+                    new Effect.Move('availability', {x: leftDelta, y: 0, mode: "relative", transition: Effect.Transitions.sinoidal});
                 }
             });
-            updateLinkHrefs(that.href);
+            updateLinkHrefs(href);
+            var path = href.replace(/\w+\/\/:[^\/]+/, '');
+            var stateObject = {path: path};
+            history.pushState(stateObject, path, path);
         };
         jQuery.get(url, data, success, "html");
         return false;
-    });
+    };
 }
 
 function updateLinkHrefs(currentHref) {
-    var url = $BASE + "get_new_availability_hrefs";
+    var url = $BASE + "get_new_hrefs";
     var data = {
         currentHref: currentHref
     };
@@ -72,6 +59,7 @@ function updateLinkHrefs(currentHref) {
         jQuery('#year').text(results.year);
         jQuery('a.page-link.back').attr("href", results.backLink);
         jQuery('a.page-link.forward').attr("href", results.fwdLink);
+        rewireLinks();
     };
     jQuery.getJSON(url, data, success);
 }

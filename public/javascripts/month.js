@@ -28,6 +28,55 @@ var getAllocatedClasses = function(idx, cn) {
     return ret.join(" ");
 };
 
+function getSlider(href, isFwd) {
+    return function() {
+        var url = href + ".table";
+        var data = null;
+        var width = jQuery('#month-con').outerWidth();
+        var success = function(response) {
+            jQuery('#month-con').css({overflow: "hidden"});
+            var $results = jQuery(response);
+            new Effect.Move('month', {
+                x: (isFwd) ? -width : width, 
+                y: 0,
+                mode: "relative",
+                transition: Effect.Transitions.sinoidal,
+                afterFinish: function() {
+                    jQuery('#month').remove();
+                    var leftPos = (isFwd) ? width : -width;
+                    var leftDelta = (isFwd) ? -width : width;
+                    $results.css({"position": "relative", "top": "0px", "left": leftPos});
+                    jQuery('#month-con').append($results);
+                    new Effect.Move('month', {x: leftDelta, y: 0, mode: "relative", transition: Effect.Transitions.sinoidal});
+                    rewireButtons();
+                    setButtonState();
+                }
+            });
+            updateLinkHrefs(href);
+            var path = href.replace(/\w+\/\/:[^\/]+/, '');
+            var stateObject = {path: path};
+            history.pushState(stateObject, path, path);
+        };
+        jQuery.get(url, data, success, "html");
+        return false;
+    };
+}
+
+function updateLinkHrefs(currentHref) {
+    var url = $BASE + "get_new_hrefs";
+    var data = {
+        currentHref: currentHref
+    };
+    var success = function(results) {
+        jQuery('#month-name').text(results.monthName);
+        jQuery('#year').text(results.year);
+        jQuery('a.page-link.back').attr("href", results.backLink);
+        jQuery('a.page-link.forward').attr("href", results.fwdLink);
+        rewireButtons();
+    };
+    jQuery.getJSON(url, data, success);
+}
+
 function sendPeriodRequest(ids) {
     jQuery.ajax({
         headers: {
@@ -71,12 +120,19 @@ function sendPeriodRequest(ids) {
     });
 }
 
-jQuery(function() {
-    jQuery('#clear-all').click(function() {
+function rewireButtons() {
+    var $fwdLink = jQuery('a.page-link.forward');
+    var $backLink = jQuery('a.page-link.back');
+    $fwdLink.unbind('click');
+    $backLink.unbind('click');
+    $fwdLink.click(getSlider($fwdLink.attr("href"), true));
+    $backLink.click(getSlider($backLink.attr("href"), false));
+
+    jQuery('#clear-all').unbind('click').click(function() {
         jQuery('.day-half').removeClass("cal-selected");
         setButtonState();
     });
-    jQuery('.cal-week.cal-cell').click(function() {
+    jQuery('.cal-week.cal-cell').unbind('click').click(function() {
         var parts = this.id.split("-");
         var dates = parts[2].split(":");
         var startDate = dates[0];
@@ -93,14 +149,14 @@ jQuery(function() {
         }).toggleClass("cal-selected");
         setButtonState();
     });
-    jQuery('#add-period').click(function(ev) {
+    jQuery('#add-period').unbind('click').click(function(ev) {
         var selected = jQuery('.cal-selected.day-half');
         var ids = selected.map(function() {
             return this.id;
             }).get();
         sendPeriodRequest(ids);
     });
-    jQuery('.day-half').click(function(ev) {
+    jQuery('.day-half').unbind('click').click(function(ev) {
         var selectedClass = 'cal-selected';
         if (ev.shiftKey) {
             var halfDays = jQuery('.day-half');
@@ -125,4 +181,6 @@ jQuery(function() {
         setButtonState();
         return false;
     });
-});
+}
+
+jQuery(rewireButtons);

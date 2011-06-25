@@ -88,8 +88,13 @@ sub handleAvailibility {
     }, $opts;
 };
 
-get qr!/($year_re)/($months_re)! => sub {
+get qr!/($year_re)/($months_re)(?:/0?1)?! => \&handleMonthDisplay;
+get qr!/($year_re)/($months_re)(?:/0?1)?.table! => sub {
+    return handleMonthDisplay(true);
+};
 
+sub handleMonthDisplay {
+    my $only_table = shift;
     my ( $year, $month ) = splat;
     my $dt = DateTime->new(
         month => $month,
@@ -119,14 +124,17 @@ get qr!/($year_re)/($months_re)! => sub {
         $allocated_periods{$key} = $p;
     }
 
-    return template month => {
+    my $opts = ($only_table) ? {layout => undef} : {};
+    my $template = ($only_table) ? "month_table" : "month";
+
+    return template $template => {
         year      => $year,
         month     => sprintf( "%02d", $month ),
         monthname => $month_name,
         user      => $user,
         allocated => \%allocated_periods,
         view_name => 'month',
-    };
+    }, $opts;
 };
 
 get '/profile' => sub {
@@ -250,15 +258,19 @@ post '/cancel_leave' => sub {
     return to_json( { deleted_count => $deleted_count } );
 };
 
-get '/get_new_availability_hrefs' => sub {
+get '/get_new_hrefs' => sub {
     my $currentHref = param "currentHref";
     my @parts = split('/', $currentHref);
-    my $dt = parse_dt(@parts[-3, -2, -1]);
+
+    my $dt = eval { parse_dt(@parts[-3, -2, -1]) } || parse_dt(@parts[-2, -1], 1);
+
+    my $fragment = ($currentHref =~ /availability/) ? '/availability/' : '/';
+
     my $ret = {
         monthName => $dt->month_name,
         year => $dt->year,
-        backLink => "" . proxy->uri_for('/availability/' . $dt->clone->subtract(months => 1)->ymd('/')),
-        fwdLink => "" . proxy->uri_for('/availability/' . $dt->clone->add(months => 1)->ymd('/')),
+        backLink => "" . proxy->uri_for($fragment . $dt->clone->subtract(months => 1)->ymd('/')),
+        fwdLink => "" . proxy->uri_for($fragment . $dt->clone->add(months => 1)->ymd('/')),
     };
     return to_json($ret);
 };

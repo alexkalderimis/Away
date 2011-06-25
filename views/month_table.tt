@@ -1,0 +1,69 @@
+<!-- START: [% component.name %] -->
+[% USE padded = format('%02d') %]
+[% USE cal = Calendar.Simple(month, year, 1) %]
+<div id="month">
+    <table class="cal-table">
+    <tr>
+        <th class="cal-header cal-week">WEEK</th>
+        [% FOREACH day IN cal.days(1) %]
+            [% classname = (loop.count <= 5 ) ? "cal-weekday" : "cal-weekend" %]
+            <th class="cal-header cal-day[% loop.count %] [% classname %]">[% day %]</th>
+        [% END %]
+    </tr>
+    <tbody>
+    [% FOREACH row IN cal.rows %]
+        <tr>
+            [% startDate = ""
+               endDate = "" %]
+            [% FOREACH date IN row %]
+                [% IF date and not startDate %]
+                    [% startDate = padded(date) %]
+                [% END %]
+                [% IF date %]
+                    [% endDate = padded(date) %]
+                [% END %]
+            [% END %]
+
+            <td class="cal-week cal-cell" 
+                id="[% year %]-[% month %]-[% startDate %]:[% endDate %]">
+                Week [% loop.count %]
+            </td>
+        [% FOREACH date IN row %]
+            [% classname = (date) ? ((loop.count <= 5) ? "cal-weekday" : "cal-weekend") : "cal-empty" %]
+            <td class="cal-cell [% classname %]"> 
+            [% IF date %]
+                <span class="date-label">[% date %]</span>
+                [% IF loop.count <= 5 %] 
+                    [% IF is_work_day(year, month, date) %]
+
+    [% FOREACH am_pm IN ["am", "pm"] %]
+      [% parts = [ year, month, padded(date), am_pm ] %]
+      [% key = parts.join('-') %]
+      [% period = allocated.$key %]
+      [% safeCat = period.category.replace('[^A-Za-z0-9]+', '-') %]
+      [% shortCat = period.category.replace('\/.*', '') %]
+
+      <div class="[% am_pm %] day-half [% "allocated-$safeCat" %]" 
+           id="[% key %]">
+           [% IF period %]
+             [% (period.note) ? period.note : shortCat %]
+           [% END %]
+      </div>
+    [% END %]
+                    [% ELSE %]
+    <div class="cal-holiday">
+        Public Holiday
+    </div>
+                    [% END %]
+                [% END %]
+            [% ELSE %]
+              &nbsp;
+            [% END %]
+            </td>
+        [% END %]
+        </tr>
+    [% END %]
+    </tbody>
+    </table>
+</div>
+<!-- END: [% component.name %] -->
